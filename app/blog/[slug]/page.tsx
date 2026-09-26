@@ -8,7 +8,10 @@ import {
   getRecentBlogPosts,
   formatPublishedDate,
   getDisplayCategory,
+  getDisplayAuthor,
 } from '@/lib/cosmic'
+import CategoryTag from '@/components/CategoryTag'
+import AuthorByline from '@/components/AuthorByline'
 import MarkdownContent from '@/components/MarkdownContent'
 import PostCard from '@/components/PostCard'
 import SubNav from '@/components/SubNav'
@@ -56,27 +59,32 @@ export default async function BlogPostPage({ params }: PageProps) {
 
   const morePosts = await getRecentBlogPosts(slug, 3)
   const category = getDisplayCategory(post)
+  const author = getDisplayAuthor(post)
   const date = formatPublishedDate(post)
   const image = post.metadata?.featured_image
 
   return (
     <>
-      <SubNav />
+      <SubNav activeSlug={category?.slug ?? 'none'} />
       <article className="mx-auto max-w-3xl px-4 py-14 sm:px-6 lg:px-8">
         <Link href="/" className="text-sm font-semibold text-netlify-teal hover:text-netlify-tealDark">
           ← Back to blog
         </Link>
 
-        <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color }} />
-          <span className="text-xs font-semibold text-gray-200">{category.name}</span>
-        </div>
+        {category && (
+          <div className="mt-6">
+            <CategoryTag category={category} size="md" />
+          </div>
+        )}
 
         <h1 className="mt-5 text-3xl font-extrabold leading-tight text-white sm:text-4xl lg:text-5xl">
           {post.title}
         </h1>
 
-        {date && <p className="mt-4 text-sm text-gray-400">{date}</p>}
+        <div className="mt-5 flex flex-wrap items-center gap-4">
+          {author && <AuthorByline author={author} showRole />}
+          {date && <p className="text-sm text-gray-400">{date}</p>}
+        </div>
 
         {image && (
           <img

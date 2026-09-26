@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import type { Blog } from '@/types'
-import { formatPublishedDate, getDisplayCategory } from '@/lib/cosmic'
+import { formatPublishedDate, getDisplayAuthor, getDisplayCategory } from '@/lib/cosmic'
+import CategoryTag from '@/components/CategoryTag'
+import AuthorByline from '@/components/AuthorByline'
 
 interface PostCardProps {
   post: Blog
@@ -8,6 +10,7 @@ interface PostCardProps {
 
 export default function PostCard({ post }: PostCardProps) {
   const category = getDisplayCategory(post)
+  const author = getDisplayAuthor(post)
   const date = formatPublishedDate(post)
   const image = post.metadata?.featured_image
 
@@ -28,10 +31,7 @@ export default function PostCard({ post }: PostCardProps) {
       </Link>
 
       <div className="mt-4 flex items-center gap-3">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: category.color }} />
-          <span className="text-xs font-semibold text-gray-300">{category.name}</span>
-        </div>
+        {category && <CategoryTag category={category} />}
         {date && <span className="text-xs text-gray-500">{date}</span>}
       </div>
 
@@ -40,6 +40,12 @@ export default function PostCard({ post }: PostCardProps) {
           {post.title}
         </h2>
       </Link>
+
+      {author && (
+        <div className="mt-4">
+          <AuthorByline author={author} />
+        </div>
+      )}
     </article>
   )
 }

@@ -14,6 +14,22 @@ export interface CosmicObject {
   modified_at: string;
 }
 
+export interface Category extends CosmicObject {
+  type: 'categories';
+  metadata: {
+    description?: string;
+  };
+}
+
+export interface Author extends CosmicObject {
+  type: 'authors';
+  metadata: {
+    avatar?: CosmicImage;
+    role?: string;
+    bio?: string;
+  };
+}
+
 export interface Blog extends CosmicObject {
   type: 'blog';
   metadata: {
@@ -21,12 +37,21 @@ export interface Blog extends CosmicObject {
     featured_image?: CosmicImage;
     published_at?: string;
     content?: string;
+    category?: Category | string | null;
+    author?: Author | string | null;
   };
 }
 
 export interface DisplayCategory {
   name: string;
+  slug: string;
   color: string;
+}
+
+export interface DisplayAuthor {
+  name: string;
+  role?: string;
+  avatarUrl?: string;
 }
 
 export interface BlogListResult {
