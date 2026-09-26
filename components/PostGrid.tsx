@@ -9,9 +9,10 @@ interface PostGridProps {
   total: number
   pageSize: number
   skipOffset: number
+  categorySlug?: string
 }
 
-export default function PostGrid({ initialPosts, total, pageSize, skipOffset }: PostGridProps) {
+export default function PostGrid({ initialPosts, total, pageSize, skipOffset, categorySlug }: PostGridProps) {
   const [posts, setPosts] = useState<Blog[]>(initialPosts)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
@@ -23,7 +24,9 @@ export default function PostGrid({ initialPosts, total, pageSize, skipOffset }: 
     setError(false)
     try {
       const skip = skipOffset + posts.length
-      const response = await fetch(`/api/posts?skip=${skip}&limit=${pageSize}`)
+      const params = new URLSearchParams({ skip: String(skip), limit: String(pageSize) })
+      if (categorySlug) params.set('category', categorySlug)
+      const response = await fetch(`/api/posts?${params.toString()}`)
       if (!response.ok) throw new Error('Failed to load posts')
       const data = await response.json()
       const newPosts: Blog[] = data.posts || []
@@ -36,7 +39,7 @@ export default function PostGrid({ initialPosts, total, pageSize, skipOffset }: 
   }
 
   if (posts.length === 0) {
-    return <div className="py-16 text-center text-gray-400">No more posts to show right now.</div>
+    return <div className="py-16 text-center text-gray-400">No posts to show right now.</div>
   }
 
   return (

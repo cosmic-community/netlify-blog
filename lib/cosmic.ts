@@ -1,5 +1,5 @@
 import { createBucketClient } from '@cosmicjs/sdk'
-import type { Blog, BlogListResult, DisplayCategory } from '@/types'
+import type { Blog, BlogListResult, Category, DisplayAuthor, DisplayCategory } from '@/types'
 
 export const cosmic = createBucketClient({
   bucketSlug: process.env.COSMIC_BUCKET_SLUG as string,
@@ -46,24 +46,40 @@ export function formatPublishedDate(post: Blog): string {
   })
 }
 
-const CATEGORIES: DisplayCategory[] = [
-  { name: 'Product News', color: '#5cebdf' },
-  { name: 'Engineering', color: '#f9c74f' },
-  { name: 'Company News', color: '#f94144' },
-  { name: 'Case Studies', color: '#90be6d' },
-  { name: 'Tutorials', color: '#9d8cff' },
-  { name: 'News & Announcements', color: '#f48fb1' },
-]
+// Preferred order for the blog sub-navigation (matches netlify.com/blog)
+export const CATEGORY_ORDER = ['news', 'case-studies', 'tutorials', 'insights', 'changelog']
 
-const DEFAULT_CATEGORY: DisplayCategory = { name: 'News & Announcements', color: '#5cebdf' }
+const CATEGORY_COLORS: Record<string, string> = {
+  news: '#5cebdf',
+  'case-studies': '#90be6d',
+  tutorials: '#9d8cff',
+  insights: '#f9c74f',
+  changelog: '#f48fb1',
+}
 
-export function getDisplayCategory(post: { slug: string; id: string }): DisplayCategory {
-  const key = post.slug || post.id || 'default'
-  let hash = 0
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash + key.charCodeAt(i)) % CATEGORIES.length
+const DEFAULT_COLOR = '#5cebdf'
+
+export function getCategoryColor(slug: string): string {
+  return CATEGORY_COLORS[slug] ?? DEFAULT_COLOR
+}
+
+export function getDisplayCategory(post: Blog): DisplayCategory | null {
+  const cat = post.metadata?.category
+  if (!cat || typeof cat !== 'object' || !cat.title) return null
+  return { name: cat.title, slug: cat.slug, color: getCategoryColor(cat.slug) }
+}
+
+export function getDisplayAuthor(post: Blog): DisplayAuthor | null {
+  const author = post.metadata?.author
+  if (!author || typeof author !== 'object' || !author.title) return null
+  const avatar = author.metadata?.avatar
+  return {
+    name: author.title,
+    role: author.metadata?.role || undefined,
+    avatarUrl: avatar?.imgix_url
+      ? `${avatar.imgix_url}?w=96&h=96&fit=crop&auto=format,compress`
+      : undefined,
   }
-  return CATEGORIES[hash] ?? DEFAULT_CATEGORY
 }
 
 async function fetchAllBlogPosts(): Promise<Blog[]> {
@@ -83,10 +99,20 @@ async function fetchAllBlogPosts(): Promise<Blog[]> {
   }
 }
 
-export async function getBlogPosts(limit: number, skip: number): Promise<BlogListResult> {
+function matchesCategory(post: Blog, categorySlug: string): boolean {
+  const cat = post.metadata?.category
+  return !!cat && typeof cat === 'object' && cat.slug === categorySlug
+}
+
+export async function getBlogPosts(
+  limit: number,
+  skip: number,
+  categorySlug?: string
+): Promise<BlogListResult> {
   const all = await fetchAllBlogPosts()
-  const total = all.length
-  const posts = all.slice(skip, skip + limit)
+  const filtered = categorySlug ? all.filter((p) => matchesCategory(p, categorySlug)) : all
+  const total = filtered.length
+  const posts = filtered.slice(skip, skip + limit)
   return { posts, total }
 }
 
@@ -108,4 +134,38 @@ export async function getBlogPostBySlug(slug: string): Promise<Blog | null> {
 export async function getRecentBlogPosts(excludeSlug: string, limit: number): Promise<Blog[]> {
   const all = await fetchAllBlogPosts()
   return all.filter((p) => p.slug !== excludeSlug).slice(0, limit)
+}
+
+export async function getCategories(): Promise<Category[]> {
+  try {
+    const response = await cosmic.objects
+      .find({ type: 'categories' })
+      .props(['id', 'slug', 'title', 'metadata', 'created_at', 'modified_at'])
+      .limit(100)
+
+    const rank = (slug: string) => {
+      const i = CATEGORY_ORDER.indexOf(slug)
+      return i === -1 ? CATEGORY_ORDER.length : i
+    }
+    return (response.objects as Category[]).sort((a, b) => rank(a.slug) - rank(b.slug))
+  } catch (error) {
+    if (hasStatus(error) && error.status === 404) {
+      return []
+    }
+    throw new Error('Failed to fetch categories')
+  }
+}
+
+export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+  try {
+    const response = await cosmic.objects
+      .findOne({ type: 'categories', slug })
+      .props(['id', 'slug', 'title', 'metadata', 'created_at', 'modified_at'])
+    return (response.object as Category) || null
+  } catch (error) {
+    if (hasStatus(error) && error.status === 404) {
+      return null
+    }
+    throw new Error('Failed to fetch category')
+  }
 }
