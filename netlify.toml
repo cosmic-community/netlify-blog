@@ -1,0 +1,4 @@
+[build.environment]
+  # The Cosmic bucket slug is a public identifier, not a secret, and its value
+  # legitimately appears in source files and build output.
+  SECRETS_SCAN_OMIT_KEYS = "COSMIC_BUCKET_SLUG"
