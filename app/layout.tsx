@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import './globals.css'
 import AnnouncementBar from '@/components/AnnouncementBar'
+import DemoDisclaimer from '@/components/DemoDisclaimer'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import CosmicBadge from '@/components/CosmicBadge'
@@ -10,6 +11,16 @@ import AskNetlifyButton from '@/components/AskNetlifyButton'
 export const metadata: Metadata = {
   title: 'Netlify Blog — News, tutorials, and updates',
   description: 'The latest news, product updates, tutorials, and stories from the Netlify Blog.',
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -31,6 +42,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <script defer src="https://insights.cosmicinsights.dev/script.js" data-project="6ab70313135b7942815df2a3"></script>
       </head>
       <body className="font-sans">
+        <DemoDisclaimer />
         <AnnouncementBar />
         <Header />
         <main className="min-h-screen">{children}</main>
